@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Kiểm Kho Hàng Ngày</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/umd/lucide.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Be Vietnam Pro', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+      colors: {
+        brand: { 50:'#f0fdf4', 100:'#dcfce7', 200:'#bbf7d0', 300:'#86efac', 400:'#4ade80', 500:'#22c55e', 600:'#16a34a', 700:'#15803d', 800:'#166534', 900:'#14532d' },
+        surface: { 50:'#f8fafc', 100:'#f1f5f9', 200:'#e2e8f0', 300:'#cbd5e1', 400:'#94a3b8', 500:'#64748b', 600:'#475569', 700:'#334155', 800:'#1e293b', 900:'#0f172a', 950:'#020617' }
+      }
+    }
+  }
+}
+</script>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Be Vietnam Pro',sans-serif;background:#0f172a;color:#f1f5f9;overflow-x:hidden}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:#1e293b}
+::-webkit-scrollbar-thumb{background:#334155;border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:#475569}
+.card{background:#1e293b;border:1px solid #334155;border-radius:12px}
+.card-glass{background:rgba(30,41,59,0.8);backdrop-filter:blur(12px);border:1px solid rgba(51,65,85,0.6);border-radius:12px}
+.btn-primary{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Be Vietnam Pro',sans-serif}
+.btn-primary:hover{background:linear-gradient(135deg,#22c55e,#16a34a);transform:translateY(-1px);box-shadow:0 4px 12px rgba(34,197,94,.3)}
+.btn-primary:active{transform:translateY(0)}
+.btn-secondary{background:#334155;color:#f1f5f9;border:1px solid #475569;border-radius:8px;font-weight:500;cursor:pointer;transition:all .2s;font-family:'Be Vietnam Pro',sans-serif}
+.btn-secondary:hover{background:#475569;border-color:#64748b}
+.btn-danger{background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Be Vietnam Pro',sans-serif}
+.btn-danger:hover{background:linear-gradient(135deg,#ef4444,#dc2626)}
+.input-field{background:#0f172a;border:1px solid #334155;border-radius:8px;color:#f1f5f9;padding:10px 14px;font-family:'Be Vietnam Pro',sans-serif;font-size:14px;transition:border-color .2s;width:100%}
+.input-field:focus{outline:none;border-color:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.1)}
+.input-field::placeholder{color:#475569}
+select.input-field option{background:#1e293b}
+.tab-active{border-bottom:2px solid #22c55e;color:#22c55e}
+.product-row{transition:background .15s;cursor:pointer;border-bottom:1px solid rgba(51,65,85,.4)}
+.product-row:hover{background:rgba(34,197,94,.05)}
+.product-row:active{background:rgba(34,197,94,.1)}
+.counted-row{background:rgba(34,197,94,.04)}
+.badge-green{background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600}
+.badge-red{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600}
+.badge-yellow{background:rgba(234,179,8,.15);color:#facc15;border:1px solid rgba(234,179,8,.3);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600}
+.fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#22c55e,#15803d);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(34,197,94,.4);transition:all .2s;z-index:40;font-size:24px}
+.fab:hover{transform:scale(1.1);box-shadow:0 6px 24px rgba(34,197,94,.5)}
+.fab:active{transform:scale(.95)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-content{background:#1e293b;border:1px solid #334155;border-radius:16px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto}
+.qty-btn{width:48px;height:48px;border-radius:8px;border:none;cursor:pointer;font-size:18px;font-weight:700;font-family:'Be Vietnam Pro',sans-serif;transition:all .15s}
+.qty-btn-plus{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff}
+.qty-btn-plus:hover{background:linear-gradient(135deg,#4ade80,#22c55e)}
+.qty-btn-minus{background:#334155;color:#f1f5f9;border:1px solid #475569}
+.qty-btn-minus:hover{background:#475569}
+.kpi-card{background:linear-gradient(135deg,rgba(30,41,59,1),rgba(15,23,42,.8));border:1px solid #334155;border-radius:12px;padding:16px}
+.top-bar{background:rgba(15,23,42,.95);backdrop-filter:blur(12px);border-bottom:1px solid #1e293b;position:sticky;top:0;z-index:30}
+.search-container{position:relative}
+.search-container input{padding-left:36px}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#475569;pointer-events:none}
+.disc-positive{color:#4ade80;font-weight:600}
+.disc-negative{color:#f87171;font-weight:600}
+.disc-zero{color:#475569}
+.slide-up{animation:slideUp .25s ease-out}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.pulse-ring{animation:pulseRing 2s infinite}
+@keyframes pulseRing{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.4)}50%{box-shadow:0 0 0 8px rgba(34,197,94,0)}}
+.loading-dots::after{content:'...';animation:dots 1.5s steps(4,end) infinite}
+@keyframes dots{0%,20%{content:''}40%{content:'.'}60%{content:'..'}80%,100%{content:'...'}}
+.row-counted-indicator{width:6px;height:6px;border-radius:50%;background:#22c55e;display:inline-block;margin-right:6px}
+.table-wrap{overflow-x:auto}
+.disc-table{width:100%;border-collapse:collapse;font-size:12px}
+.disc-table th{background:#0f172a;color:#94a3b8;font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.5px;padding:10px 8px;text-align:left;white-space:nowrap;border-bottom:1px solid #334155}
+.disc-table td{padding:9px 8px;border-bottom:1px solid rgba(51,65,85,.3);white-space:nowrap}
+.disc-table tr:hover td{background:rgba(34,197,94,.03)}
+.login-bg{min-height:100vh;background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f172a 100%);position:relative;overflow:hidden}
+.login-bg::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(34,197,94,.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(34,197,94,.05) 0%,transparent 50%);pointer-events:none}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;font-weight:500;color:#94a3b8;margin-bottom:6px}
+.audit-log-item{border-left:3px solid #334155;padding:12px 16px;border-radius:0 8px 8px 0;background:#0f172a;margin-bottom:8px;transition:border-color .2s}
+.audit-log-item:hover{border-left-color:#22c55e}
+.audit-log-done{border-left-color:#22c55e}
+.audit-log-progress{border-left-color:#facc15}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.chip-success{background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3)}
+.chip-warning{background:rgba(234,179,8,.15);color:#facc15;border:1px solid rgba(234,179,8,.3)}
+.chip-info{background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+// ─── Constants ───────────────────────────────────────────────────────────────
+const STORES = Array.from({length:60},(_,i)=>`ST${String(i+1).padStart(3,'0')}`);
+const ACCOUNTS = {
+  'store1@retail.com': { store:'ST001', name:'Nhân viên ST001' },
+  'store2@retail.com': { store:'ST002', name:'Nhân viên ST002' },
+  'admin@retail.com': { store:'*', name:'Admin Toàn Hệ Thống' },
+  'am@retail.com': { store:'*', name:'Area Manager' }
+};
+const PAGE_SIZE = 50;
+
+// ─── Data Generation ──────────────────────────────────────────────────────────
+function generateSampleInventory(count=10000){
+  const groups=['Promotion','Household','ISPM','Toys','Dairy','Beverage','Snacks','Personal Care','Frozen','Seasoning'];
+  const categories={'Promotion':['Promo A','Promo B'],'Household':['Cleaning','Kitchen'],'ISPM':['ISPM-1','ISPM-2'],'Toys':['Educational','Outdoor'],'Dairy':['Milk','Yogurt','Cheese'],'Beverage':['Juice','Water','Soda'],'Snacks':['Chips','Crackers','Candy'],'Personal Care':['Shampoo','Soap','Lotion'],'Frozen':['Meat','Seafood','Vegetables'],'Seasoning':['Sauce','Spice','Oil']};
+  const brands=['Vinamilk','TH True','Nestlé','Masan','Unilever','P&G','Abbott','Nutifood','Bibica','Kinh Đô'];
+  const suffixes=['[M]','[Deactivated]','','','','40*60','250ml','500g','1L',''];
+  const items=[];
+  for(let i=0;i<count;i++){
+    const g=groups[i%groups.length];
+    const catList=categories[g]||['General'];
+    const cat=catList[i%catList.length];
+    const brand=brands[i%brands.length];
+    const sfx=suffixes[i%suffixes.length];
+    const productId='PID'+String(100000+i);
+    items.push({
+      upc: productId,
+      name: `${brand} ${cat} Sản phẩm ${String(i+1).padStart(4,'0')}${sfx?' '+sfx:''}`,
+      group: g,
+      category: cat,
+      subCategory: `Sub-${cat}`,
+      price: 0,
+      stockQty: Math.floor(Math.random()*500)
+    });
+  }
+  return items;
+}
+
+// ─── Utilities ────────────────────────────────────────────────────────────────
+function fmtVND(n){
+  if(!n&&n!==0)return'—';
+  return new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND',maximumFractionDigits:0}).format(n);
+}
+function fmtNum(n){
+  if(n===undefined||n===null)return'—';
+  return new Intl.NumberFormat('vi-VN').format(n);
+}
+function nowISO(){return new Date().toISOString()}
+function nowDisplay(){return new Date().toLocaleString('vi-VN')}
+function lsGet(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch{return null}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
+
+// ─── Icon Helper ──────────────────────────────────────────────────────────────
+function Icon({name,size=16,className='',strokeWidth=2}){
+  const ref=useRef(null);
+  useEffect(()=>{
+    if(ref.current&&window.lucide){
+      ref.current.innerHTML='';
+      const el=document.createElement('span');
+      el.style.display='inline-flex';
+      ref.current.appendChild(el);
+      try{
+        const icons=window.lucide;
+        const iconName=name.replace(/-([a-z])/g,(_,c)=>c.toUpperCase());
+        if(icons[iconName]){
+          const svg=icons[iconName]([size,size],{stroke:'currentColor',strokeWidth,fill:'none','stroke-linecap':'round','stroke-linejoin':'round'});
+          el.innerHTML=svg;
+        }
+      }catch(e){}
+    }
+  },[name,size,strokeWidth]);
+  return <span ref={ref} className={`inline-flex items-center justify-center ${className}`} style={{lineHeight:1}}/>;
+}
+
+// ─── Login Screen ──────────────────────────────────────────────────────────────
+function LoginScreen({onLogin}){
+  const [email,setEmail]=useState('');
+  const [storeId,setStoreId]=useState('ST001');
+  const [error,setError]=useState('');
+  const [loading,setLoading]=useState(false);
+
+  function handleLogin(e){
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    setTimeout(()=>{
+      const acc=ACCOUNTS[email.toLowerCase().trim()];
+      if(!acc){setError('Email không tồn tại trong hệ thống.');setLoading(false);return;}
+      if(acc.store!=='*'&&acc.store!==storeId){
+        setError(`Truy cập bị từ chối. Tài khoản này chỉ được phép vào ${acc.store}.`);
+        setLoading(false);return;
+      }
+      const user={email:email.toLowerCase().trim(),name:acc.name,store:storeId,isAdmin:acc.store==='*'};
+      lsSet('currentUser',user);
+      onLogin(user);
+      setLoading(false);
+    },600);
+  }
+
+  return(
+    <div className="login-bg flex items-center justify-center min-h-screen p-4">
+      <div className="w-full max-w-md slide-up">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-600 mb-4" style={{background:'linear-gradient(135deg,#16a34a,#15803d)',boxShadow:'0 8px 24px rgba(34,197,94,.3)'}}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+              <rect x="9" y="3" width="6" height="4" rx="1"/>
+              <path d="M9 12l2 2 4-4"/>
+            </svg>
+          </div>
+          <h1 className="text-2xl font-800 text-white mb-1" style={{fontWeight:800}}>Kiểm Kho Hàng Ngày</h1>
+          <p className="text-surface-400 text-sm">Hệ thống kiểm soát tồn kho bán lẻ</p>
+        </div>
+
+        <div className="card p-6">
+          <form onSubmit={handleLogin}>
+            <div className="form-group">
+              <label>Email đăng nhập</label>
+              <input className="input-field" type="email" placeholder="vd: store1@retail.com" value={email} onChange={e=>setEmail(e.target.value)} required autoFocus/>
+            </div>
+            <div className="form-group">
+              <label>Cửa hàng</label>
+              <select className="input-field" value={storeId} onChange={e=>setStoreId(e.target.value)}>
+                {STORES.map(s=><option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            {error&&<div className="mb-4 p-3 rounded-lg text-red-400 text-sm font-500" style={{background:'rgba(239,68,68,.1)',border:'1px solid rgba(239,68,68,.3)'}}>{error}</div>}
+            <button type="submit" className="btn-primary w-full py-3 text-base" disabled={loading}>
+              {loading?<span className="loading-dots">Đang xử lý</span>:'Đăng Nhập'}
+            </button>
+          </form>
+          <div className="mt-4 p-3 rounded-lg" style={{background:'rgba(34,197,94,.05)',border:'1px solid rgba(34,197,94,.15)'}}>
+            <p className="text-xs text-surface-400 mb-1 font-600">Tài khoản thử nghiệm:</p>
+            <p className="text-xs text-surface-400 font-mono">store1@retail.com → ST001</p>
+            <p className="text-xs text-surface-400 font-mono">admin@retail.com → Tất cả cửa hàng</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── New Audit Modal ───────────────────────────────────────────────────────────
+function NewAuditModal({onClose,onCreated,user}){
+  const [cardName,setCardName]=useState('');
+  const [checker,setChecker]=useState('');
+  const [allItems,setAllItems]=useState(null);// raw parsed items
+  const [groups,setGroups]=useState([]);
+  const [selectedGroup,setSelectedGroup]=useState('');
+  const [loading,setLoading]=useState(false);
+  const [fileInfo,setFileInfo]=useState('');
+  const [step,setStep]=useState(1);// 1=info, 2=group, 3=ready
+
+  function parseItems(items){
+    // Build group map — every value is strictly initialized as []
+    const grMap={};
+    (Array.isArray(items)?items:[]).forEach(it=>{
+      const g=String(it.group||'').trim();
+      if(!g)return;
+      if(!Array.isArray(grMap[g]))grMap[g]=[];
+      grMap[g].push(it);
+    });
+    const gs=Object.keys(grMap).sort();
+    setGroups(gs);
+    setAllItems(grMap);
+    setStep(2);
+    setLoading(false);
+  }
+
+  function handleFile(e){
+    const file=e.target.files[0];
+    if(!file)return;
+    setLoading(true);
+    setFileInfo(file.name);
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const wb=XLSX.read(ev.target.result,{type:'binary'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        // raw 2D array; defval='' prevents undefined cells
+        const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        const items=[];
+        for(let i=1;i<rows.length;i++){
+          const r=Array.isArray(rows[i])?rows[i]:[];
+          // Col C (idx 2) = Group — skip rows with no group
+          const grRaw=String(r[2]!=null?r[2]:'').trim();
+          if(!grRaw)continue;
+          // Col F (idx 5) = Product ID / barcode identifier
+          const upcRaw=String(r[5]!=null?r[5]:'').trim();
+          if(!upcRaw)continue;
+          // Col G (idx 6) = Short Name — preserved as-is (brackets, asterisks safe)
+          const nameRaw=String(r[6]!=null?r[6]:`Sản phẩm ${i}`).trim();
+          // Col H (idx 7) = Inventory / stockQty
+          const stockRaw=r[7];
+          const stockQty=(!isNaN(parseFloat(stockRaw))&&isFinite(stockRaw))?parseFloat(stockRaw):0;
+          // Col D (idx 3) = Category, Col E (idx 4) = Sub Category (stored for export)
+          const category=String(r[3]!=null?r[3]:'').trim();
+          const subCategory=String(r[4]!=null?r[4]:'').trim();
+          items.push({
+            upc: upcRaw,
+            name: nameRaw,
+            group: grRaw,
+            category,
+            subCategory,
+            price: 0,       // not present in this schema; kept for discrepancy calc compatibility
+            stockQty
+          });
+        }
+        parseItems(items);
+      }catch(err){
+        console.error('XLSX parse error:',err);
+        alert('Lỗi đọc file Excel. Vui lòng kiểm tra định dạng và thử lại.');
+        setLoading(false);
+      }
+    };
+    reader.readAsBinaryString(file);
+  }
+
+  function handleCSV(e){
+    const file=e.target.files[0];
+    if(!file)return;
+    setLoading(true);
+    setFileInfo(file.name);
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const text=ev.target.result||'';
+        const lines=text.split(/\r?\n/);
+        const items=[];
+
+        // Quote-safe CSV column splitter — handles "field with, commas" and special chars
+        function splitCSVRow(line){
+          const cols=[];
+          let cur='';
+          let inQ=false;
+          for(let ci=0;ci<line.length;ci++){
+            const ch=line[ci];
+            if(ch==='"'){
+              if(inQ&&line[ci+1]==='"'){cur+='"';ci++;}// escaped quote
+              else inQ=!inQ;
+            } else if(ch===','&&!inQ){
+              cols.push(cur);
+              cur='';
+            } else {
+              cur+=ch;
+            }
+          }
+          cols.push(cur);
+          return cols;
+        }
+
+        for(let i=1;i<lines.length;i++){
+          const line=lines[i].trim();
+          if(!line)continue;
+          const cols=splitCSVRow(line);
+          // Col C (idx 2) = Group
+          const grRaw=String(cols[2]!=null?cols[2]:'').trim();
+          if(!grRaw)continue;
+          // Col F (idx 5) = Product ID / UPC
+          const upcRaw=String(cols[5]!=null?cols[5]:'').trim();
+          if(!upcRaw)continue;
+          // Col G (idx 6) = Short Name (special chars kept intact)
+          const nameRaw=String(cols[6]!=null?cols[6]:`Sản phẩm ${i}`).trim();
+          // Col H (idx 7) = Inventory
+          const stockRaw=cols[7]!=null?cols[7].trim():'';
+          const stockQty=(!isNaN(parseFloat(stockRaw))&&isFinite(stockRaw))?parseFloat(stockRaw):0;
+          // Col D & E = Category / Sub Category
+          const category=String(cols[3]!=null?cols[3]:'').trim();
+          const subCategory=String(cols[4]!=null?cols[4]:'').trim();
+          items.push({
+            upc: upcRaw,
+            name: nameRaw,
+            group: grRaw,
+            category,
+            subCategory,
+            price: 0,
+            stockQty
+          });
+        }
+        parseItems(items);
+      }catch(err){
+        console.error('CSV parse error:',err);
+        alert('Lỗi đọc file CSV. Vui lòng kiểm tra định dạng và thử lại.');
+        setLoading(false);
+      }
+    };
+    reader.readAsText(file,'utf-8');
+  }
+
+  function useSampleData(){
+    setLoading(true);
+    setFileInfo('Tồn kho mẫu 10.000 SKU');
+    setTimeout(()=>{
+      const items=generateSampleInventory(10000);
+      parseItems(items);
+    },100);
+  }
+
+  function handleCreate(){
+    if(!cardName.trim()||!checker.trim()||!selectedGroup){
+      alert('Vui lòng điền đầy đủ thông tin.');return;
+    }
+    // Defensive: filteredGroupProducts is always a valid Array — prevents .slice()/.forEach() crashes
+    const filteredGroupProducts=Array.isArray(allItems[selectedGroup])?allItems[selectedGroup]:[];
+    const audit={
+      id:'AUD-'+Date.now(),
+      cardName:cardName.trim(),
+      checker:checker.trim(),
+      store:user.store,
+      group:selectedGroup,
+      startTime:nowISO(),
+      endTime:null,
+      status:'Đang kiểm',
+      products:filteredGroupProducts,
+      counts:{},
+    };
+    const logs=lsGet('auditLogs')||[];
+    logs.unshift(audit);
+    lsSet('auditLogs',logs);
+    onCreated(audit);
+  }
+
+  return(
+    <div className="modal-overlay" onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
+      <div className="modal-content p-0 slide-up" style={{maxWidth:500}}>
+        <div className="flex items-center justify-between p-5 border-b" style={{borderColor:'#334155'}}>
+          <h2 className="font-700 text-lg">Tạo Phiếu Kiểm Kho Mới</h2>
+          <button onClick={onClose} className="btn-secondary p-2"><Icon name="x" size={16}/></button>
+        </div>
+        <div className="p-5">
+          {/* Step 1: Basic Info */}
+          <div className="form-group">
+            <label>Tên phiếu / Ca làm việc *</label>
+            <input className="input-field" placeholder="vd: Ca sáng 27/05/2026" value={cardName} onChange={e=>setCardName(e.target.value)}/>
+          </div>
+          <div className="form-group">
+            <label>Tên người kiểm *</label>
+            <input className="input-field" placeholder="Họ và tên nhân viên kiểm" value={checker} onChange={e=>setChecker(e.target.value)}/>
+          </div>
+
+          {/* Step 2: File upload */}
+          {!allItems&&(
+            <div>
+              <label className="block text-xs text-surface-400 mb-3 font-500">TẢI FILE TỒN KHO</label>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <label className="btn-secondary p-3 text-center text-sm cursor-pointer rounded-lg flex items-center justify-center gap-2">
+                  <Icon name="file-spreadsheet" size={14}/>
+                  <span>Excel (.xlsx)</span>
+                  <input type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFile}/>
+                </label>
+                <label className="btn-secondary p-3 text-center text-sm cursor-pointer rounded-lg flex items-center justify-center gap-2">
+                  <Icon name="file-text" size={14}/>
+                  <span>CSV</span>
+                  <input type="file" accept=".csv" className="hidden" onChange={handleCSV}/>
+                </label>
+              </div>
+              <div className="relative mb-4">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t" style={{borderColor:'#334155'}}/></div>
+                <div className="relative flex justify-center text-xs text-surface-500 bg-surface-800 px-2 w-fit mx-auto">hoặc</div>
+              </div>
+              <button onClick={useSampleData} disabled={loading} className="btn-secondary w-full py-3 text-sm flex items-center justify-center gap-2 font-500">
+                {loading?<span className="loading-dots">Đang tạo dữ liệu</span>:<><Icon name="database" size={14}/><span>Dùng Tồn Kho Mẫu (10.000 SKU)</span></>}
+              </button>
+              <p className="text-xs text-surface-500 mt-2 text-center">Cột C: Nhóm · Cột D: Category · Cột E: Sub Category · Cột F: Product ID (UPC) · Cột G: Tên SP · Cột H: Tồn kho</p>
+            </div>
+          )}
+
+          {/* File parsed, select group */}
+          {allItems&&(
+            <div className="slide-up">
+              <div className="flex items-center gap-2 mb-3 p-2 rounded-lg" style={{background:'rgba(34,197,94,.1)',border:'1px solid rgba(34,197,94,.2)'}}>
+                <Icon name="check-circle" size={14} className="text-brand-400"/>
+                <span className="text-xs text-brand-300 font-500">{fileInfo} — {Object.values(allItems).flat().length.toLocaleString('vi-VN')} SKU / {groups.length} nhóm</span>
+              </div>
+              <div className="form-group">
+                <label>Chọn Nhóm Hàng (GR) *</label>
+                <select className="input-field" value={selectedGroup} onChange={e=>setSelectedGroup(e.target.value)}>
+                  <option value="">— Chọn nhóm —</option>
+                  {groups.map(g=><option key={g} value={g}>{g} ({(allItems[g]||[]).length} SKU)</option>)}
+                </select>
+              </div>
+              {selectedGroup&&(
+                <div className="p-3 rounded-lg mb-3" style={{background:'rgba(59,130,246,.08)',border:'1px solid rgba(59,130,246,.2)'}}>
+                  <p className="text-xs text-blue-300">Nhóm <strong>{selectedGroup}</strong>: <strong>{(allItems[selectedGroup]||[]).length}</strong> sản phẩm sẽ được tải vào phiếu kiểm.</p>
+                </div>
+              )}
+              <button onClick={()=>{setAllItems(null);setGroups([]);setSelectedGroup('');setFileInfo('')}} className="text-xs text-surface-500 hover:text-surface-300 underline mb-3 block">← Tải lại file khác</button>
+            </div>
+          )}
+
+          <div className="flex gap-2 mt-4">
+            <button onClick={onClose} className="btn-secondary flex-1 py-3">Hủy</button>
+            <button onClick={handleCreate} disabled={!allItems||!selectedGroup||!cardName||!checker} className="btn-primary flex-2 py-3 flex-1">
+              Tạo Phiếu Kiểm
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Entry Popup Modal ─────────────────────────────────────────────────────────
+function EntryModal({product,existingQty,onSave,onClose}){
+  const [qty,setQty]=useState(existingQty!==undefined?existingQty:product.stockQty||0);
+  const inputRef=useRef(null);
+
+  useEffect(()=>{
+    setTimeout(()=>inputRef.current?.select(),50);
+  },[]);
+
+  function handleSave(){
+    onSave(product.upc,qty);
+    onClose();
+  }
+
+  function handleKeyDown(e){
+    if(e.key==='Enter')handleSave();
+    if(e.key==='Escape')onClose();
+  }
+
+  const disc=qty-(product.stockQty||0);
+
+  return(
+    <div className="modal-overlay" onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
+      <div className="modal-content p-0 slide-up" style={{maxWidth:400}}>
+        <div className="p-5 border-b" style={{borderColor:'#334155'}}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-surface-500 mb-1 font-mono">{product.upc}</p>
+              <h3 className="font-700 text-base leading-tight text-white">{product.name}</h3>
+            </div>
+            <button onClick={onClose} className="btn-secondary p-2 flex-shrink-0"><Icon name="x" size={14}/></button>
+          </div>
+        </div>
+        {/* Image Placeholder */}
+        <div className="mx-5 mt-4 rounded-xl flex items-center justify-center" style={{background:'linear-gradient(135deg,#1e293b,#0f172a)',border:'1px dashed #334155',height:120}}>
+          <div className="text-center">
+            <Icon name="image" size={28} className="text-surface-600 mx-auto mb-1"/>
+            <p className="text-xs text-surface-600">Hình sản phẩm</p>
+          </div>
+        </div>
+        <div className="p-5">
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="p-3 rounded-lg" style={{background:'#0f172a',border:'1px solid #334155'}}>
+              <p className="text-xs text-surface-500 mb-1">Tồn kho sổ sách</p>
+              <p className="font-700 text-white">{fmtNum(product.stockQty)}</p>
+            </div>
+            <div className="p-3 rounded-lg" style={{background:'#0f172a',border:'1px solid #334155'}}>
+              <p className="text-xs text-surface-500 mb-1">Giá bán</p>
+              <p className="font-700 text-white text-sm">{fmtVND(product.price)}</p>
+            </div>
+          </div>
+
+          <label className="block text-sm font-600 mb-3 text-surface-300">Số lượng thực tế kiểm được</label>
+          <div className="flex items-center gap-2 mb-2">
+            <button className="qty-btn qty-btn-minus" onClick={()=>setQty(q=>Math.max(0,q-10))}>-10</button>
+            <button className="qty-btn qty-btn-minus" onClick={()=>setQty(q=>Math.max(0,q-1))}>-1</button>
+            <input
+              ref={inputRef}
+              type="number" min="0"
+              className="input-field text-center text-xl font-700 flex-1"
+              style={{fontSize:24,padding:'10px',height:52}}
+              value={qty}
+              onChange={e=>setQty(Math.max(0,parseInt(e.target.value)||0))}
+              onKeyDown={handleKeyDown}
+            />
+            <button className="qty-btn qty-btn-plus" onClick={()=>setQty(q=>q+1)}>+1</button>
+            <button className="qty-btn qty-btn-plus" onClick={()=>setQty(q=>q+10)}>+10</button>
+          </div>
+
+          {/* Discrepancy preview */}
+          <div className="mb-4 p-2 rounded-lg flex items-center gap-2 text-sm" style={{background:'#0f172a',border:'1px solid #334155'}}>
+            <span className="text-surface-500 text-xs">Lệch:</span>
+            <span className={disc>0?'disc-positive':disc<0?'disc-negative':'disc-zero'} style={{fontWeight:700}}>
+              {disc>0?'+':''}{fmtNum(disc)}
+            </span>
+            <span className="text-surface-500 text-xs">|</span>
+            <span className={disc>0?'disc-positive':disc<0?'disc-negative':'disc-zero'} style={{fontSize:12}}>
+              {disc>0?'+':''}{fmtVND(disc*product.price)}
+            </span>
+          </div>
+
+          <button onClick={handleSave} className="btn-primary w-full py-3 text-base font-700 flex items-center justify-center gap-2">
+            <Icon name="save" size={16}/>
+            Lưu Số Lượng
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Audit View ────────────────────────────────────────────────────────────────
+function AuditView({audit,onUpdate,onBack,user}){
+  const [tab,setTab]=useState('list');
+  const [search,setSearch]=useState('');
+  const [counts,setCounts]=useState(audit.counts||{});
+  const [activeProduct,setActiveProduct]=useState(null);
+  const [scanBuffer,setScanBuffer]=useState('');
+  const [visibleCount,setVisibleCount]=useState(PAGE_SIZE);
+  const [discVisible,setDiscVisible]=useState(PAGE_SIZE);
+  const [isLocked,setIsLocked]=useState(audit.status==='Done');
+  const [showLockConfirm,setShowLockConfirm]=useState(false);
+  const upcInputRef=useRef(null);
+  const scanTimerRef=useRef(null);
+  const products=audit.products||[];
+
+  // Auto-refocus scanner
+  useEffect(()=>{
+    if(tab==='list'&&!isLocked&&!activeProduct){
+      scanTimerRef.current=setInterval(()=>{
+        if(document.activeElement!==upcInputRef.current&&!activeProduct){
+          upcInputRef.current?.focus();
+        }
+      },300);
+    }
+    return()=>clearInterval(scanTimerRef.current);
+  },[tab,isLocked,activeProduct]);
+
+  // Save counts to LS whenever changed
+  useEffect(()=>{
+    const logs=lsGet('auditLogs')||[];
+    const idx=logs.findIndex(l=>l.id===audit.id);
+    if(idx>-1){
+      logs[idx].counts=counts;
+      lsSet('auditLogs',logs);
+    }
+  },[counts]);
+
+  // Filtered products
+  const filtered=useMemo(()=>{
+    if(!search.trim())return products;
+    const q=search.toLowerCase();
+    return products.filter(p=>p.name.toLowerCase().includes(q)||p.upc.toLowerCase().includes(q));
+  },[products,search]);
+
+  function handleScanInput(e){
+    if(e.key==='Enter'){
+      const upc=scanBuffer.trim();
+      setScanBuffer('');
+      if(!upc)return;
+      const prod=products.find(p=>p.upc===upc);
+      if(prod)setActiveProduct({product:prod,existingQty:counts[upc]});
+      else alert(`Không tìm thấy UPC: ${upc}`);
+    }
+  }
+
+  function saveCount(upc,qty){
+    setCounts(prev=>({...prev,[upc]:qty}));
+  }
+
+  // Discrepancy data
+  const discData=useMemo(()=>{
+    return products
+      .filter(p=>counts[p.upc]!==undefined)
+      .map(p=>({...p,actualQty:counts[p.upc],disc:counts[p.upc]-(p.stockQty||0)}))
+      .sort((a,b)=>Math.abs(b.disc)-Math.abs(a.disc));
+  },[products,counts]);
+
+  const countedCount=Object.keys(counts).length;
+  const shortages=discData.filter(d=>d.disc<0).length;
+  const surplus=discData.filter(d=>d.disc>0).length;
+  const totalDiscValue=discData.reduce((s,d)=>s+d.disc*(d.price||0),0);
+
+  function handleLock(){
+    const logs=lsGet('auditLogs')||[];
+    const idx=logs.findIndex(l=>l.id===audit.id);
+    if(idx>-1){
+      logs[idx].status='Done';
+      logs[idx].endTime=nowISO();
+      logs[idx].counts=counts;
+      lsSet('auditLogs',logs);
+    }
+    setIsLocked(true);
+    setShowLockConfirm(false);
+    onUpdate({...audit,status:'Done',endTime:nowISO(),counts});
+  }
+
+  function exportCSV(){
+    const BOM='\uFEFF';
+    const headers='Product ID (UPC),Tên sản phẩm,Nhóm,Category,Sub Category,Tồn kho sổ sách,SL thực tế,Lệch,Chênh lệch VND,Cửa hàng,Phiếu,Người kiểm,Trạng thái,Thời gian bắt đầu,Thời gian kết thúc\n';
+    const rows=(Array.isArray(products)?products:[]).map(p=>{
+      const aq=counts[p.upc]!==undefined?counts[p.upc]:'';
+      const disc=aq!==''?aq-(p.stockQty||0):'';
+      const discVND=disc!==''?disc*(p.price||0):'';
+      const safeName=`"${String(p.name||'').replace(/"/g,'""')}"`;
+      return[p.upc,safeName,p.group||'',p.category||'',p.subCategory||'',p.stockQty,aq,disc,discVND,audit.store,`"${audit.cardName}"`,`"${audit.checker}"`,audit.status,audit.startTime,audit.endTime||''].join(',');
+    }).join('\n');
+    const blob=new Blob([BOM+headers+rows],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=`KiemKho_${audit.cardName}_${new Date().toLocaleDateString('vi-VN').replace(/\//g,'-')}.csv`;
+    a.click();
+  }
+
+  return(
+    <div className="flex flex-col min-h-screen">
+      {/* Top Bar */}
+      <div className="top-bar px-4 py-3">
+        <div className="flex items-center gap-3 max-w-4xl mx-auto">
+          <button onClick={onBack} className="btn-secondary p-2">
+            <Icon name="arrow-left" size={16}/>
+          </button>
+          <div className="flex-1 min-w-0">
+            <h1 className="font-700 text-sm truncate">{audit.cardName}</h1>
+            <p className="text-xs text-surface-500 truncate">{audit.group} · {audit.checker}</p>
+          </div>
+          <div className="flex items-center gap-1">
+            {isLocked?(
+              <span className="chip chip-success"><Icon name="lock" size={10}/>Đã khóa</span>
+            ):(
+              <span className="chip chip-warning"><Icon name="activity" size={10}/>Đang kiểm</span>
+            )}
+          </div>
+        </div>
+        {/* KPI Row */}
+        <div className="max-w-4xl mx-auto mt-2 grid grid-cols-4 gap-2">
+          {[
+            {label:'Đã kiểm',val:fmtNum(countedCount),color:'#22c55e'},
+            {label:'Tổng SKU',val:fmtNum(products.length),color:'#94a3b8'},
+            {label:'Thiếu',val:fmtNum(shortages),color:'#f87171'},
+            {label:'Thừa',val:fmtNum(surplus),color:'#4ade80'},
+          ].map(k=>(
+            <div key={k.label} className="text-center">
+              <div className="text-sm font-700" style={{color:k.color}}>{k.val}</div>
+              <div className="text-xs text-surface-500">{k.label}</div>
+            </div>
+          ))}
+        </div>
+        {/* Tabs */}
+        <div className="max-w-4xl mx-auto mt-3 flex gap-1 border-b" style={{borderColor:'#334155'}}>
+          {[{id:'list',label:'Danh sách',icon:'list'},{id:'disc',label:'Lệch kho',icon:'bar-chart-2'}].map(t=>(
+            <button key={t.id} onClick={()=>setTab(t.id)}
+              className={`flex items-center gap-1 px-4 py-2 text-sm font-500 transition-colors ${tab===t.id?'tab-active text-brand-400':'text-surface-500 hover:text-surface-300'}`}>
+              <Icon name={t.icon} size={13}/>{t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex-1 max-w-4xl mx-auto w-full px-4 pb-24">
+        {/* ── LIST TAB ── */}
+        {tab==='list'&&(
+          <div>
+            {/* Scanner input */}
+            {!isLocked&&(
+              <div className="py-3 flex gap-2 items-center">
+                <div className="search-container flex-1">
+                  <span className="search-icon"><Icon name="scan-barcode" size={14}/></span>
+                  <input
+                    ref={upcInputRef}
+                    className="input-field pulse-ring"
+                    placeholder="Quét mã vạch hoặc nhập UPC..."
+                    value={scanBuffer}
+                    onChange={e=>setScanBuffer(e.target.value)}
+                    onKeyDown={handleScanInput}
+                    style={{paddingLeft:36}}
+                  />
+                </div>
+              </div>
+            )}
+            {/* Search filter */}
+            <div className="pb-3 search-container">
+              <span className="search-icon"><Icon name="search" size={14}/></span>
+              <input className="input-field" style={{paddingLeft:36}} placeholder="Tìm theo tên hoặc UPC..." value={search} onChange={e=>{setSearch(e.target.value);setVisibleCount(PAGE_SIZE)}}/>
+            </div>
+            <p className="text-xs text-surface-500 mb-2">{fmtNum(filtered.length)} sản phẩm {search?`(lọc từ ${fmtNum(products.length)})`:''}</p>
+
+            {/* Product list */}
+            <div className="card overflow-hidden">
+              {filtered.slice(0,visibleCount).map((p,i)=>{
+                const counted=counts[p.upc]!==undefined;
+                const aq=counts[p.upc];
+                const disc=counted?aq-(p.stockQty||0):null;
+                return(
+                  <div key={p.upc}
+                    className={`product-row px-3 py-3 flex items-center gap-3 ${counted?'counted-row':''}`}
+                    onClick={()=>{if(!isLocked)setActiveProduct({product:p,existingQty:aq})}}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1">
+                        {counted&&<span className="row-counted-indicator"/>}
+                        <span className="text-sm font-500 truncate">{p.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs text-surface-500 font-mono">{p.upc}</span>
+                        <span className="text-xs text-surface-600">·</span>
+                        <span className="text-xs text-surface-500">{fmtVND(p.price)}</span>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      {counted?(
+                        <>
+                          <div className="text-sm font-700 text-white">{fmtNum(aq)}</div>
+                          <div className={`text-xs ${disc>0?'disc-positive':disc<0?'disc-negative':'disc-zero'}`}>
+                            {disc>0?'+':''}{disc}
+                          </div>
+                        </>
+                      ):(
+                        <div className="text-xs text-surface-600">{fmtNum(p.stockQty)}</div>
+                      )}
+                    </div>
+                    {!isLocked&&<Icon name="chevron-right" size={14} className="text-surface-600 flex-shrink-0"/>}
+                  </div>
+                );
+              })}
+              {filtered.length>visibleCount&&(
+                <button onClick={()=>setVisibleCount(v=>v+PAGE_SIZE)}
+                  className="w-full py-4 text-sm text-brand-400 font-500 hover:bg-brand-900 transition-colors flex items-center justify-center gap-2">
+                  <Icon name="chevron-down" size={14}/>
+                  Xem Thêm ({fmtNum(Math.min(PAGE_SIZE,filtered.length-visibleCount))} / {fmtNum(filtered.length-visibleCount)} còn lại)
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── DISCREPANCY TAB ── */}
+        {tab==='disc'&&(
+          <div className="pt-3">
+            {/* Summary */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="kpi-card">
+                <p className="text-xs text-surface-400 mb-1">Tổng lệch giá trị</p>
+                <p className={`text-lg font-800 ${totalDiscValue>0?'disc-positive':totalDiscValue<0?'disc-negative':'disc-zero'}`}>
+                  {totalDiscValue>0?'+':''}{fmtVND(totalDiscValue)}
+                </p>
+              </div>
+              <div className="kpi-card">
+                <p className="text-xs text-surface-400 mb-1">SKU đã kiểm / tổng</p>
+                <p className="text-lg font-800 text-white">{countedCount} / {products.length}</p>
+              </div>
+              <div className="kpi-card flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:'rgba(239,68,68,.15)'}}>
+                  <Icon name="trending-down" size={16} className="text-red-400"/>
+                </div>
+                <div>
+                  <p className="text-xs text-surface-400">Thiếu hàng</p>
+                  <p className="text-base font-700 text-red-400">{shortages} SKU</p>
+                </div>
+              </div>
+              <div className="kpi-card flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:'rgba(34,197,94,.15)'}}>
+                  <Icon name="trending-up" size={16} className="text-brand-400"/>
+                </div>
+                <div>
+                  <p className="text-xs text-surface-400">Thừa hàng</p>
+                  <p className="text-base font-700 text-brand-400">{surplus} SKU</p>
+                </div>
+              </div>
+            </div>
+
+            {discData.length===0?(
+              <div className="card p-8 text-center">
+                <Icon name="inbox" size={32} className="text-surface-600 mx-auto mb-2"/>
+                <p className="text-surface-500">Chưa có dữ liệu kiểm kho</p>
+              </div>
+            ):(
+              <>
+                <p className="text-xs text-surface-500 mb-2">{fmtNum(Math.min(discVisible,discData.length))} / {fmtNum(discData.length)} mục có lệch</p>
+                <div className="card table-wrap">
+                  <table className="disc-table">
+                    <thead>
+                      <tr>
+                        <th>UPC</th>
+                        <th>Tên sản phẩm</th>
+                        <th className="text-right">Tồn sổ</th>
+                        <th className="text-right">Thực tế</th>
+                        <th className="text-right">Lệch</th>
+                        <th className="text-right">Lệch VND</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {discData.slice(0,discVisible).map(d=>(
+                        <tr key={d.upc}>
+                          <td className="font-mono text-surface-400" style={{fontSize:10}}>{d.upc}</td>
+                          <td className="text-surface-300" style={{maxWidth:160,overflow:'hidden',textOverflow:'ellipsis'}}>{d.name}</td>
+                          <td className="text-right text-surface-400">{fmtNum(d.stockQty)}</td>
+                          <td className="text-right text-white font-600">{fmtNum(d.actualQty)}</td>
+                          <td className={`text-right font-700 ${d.disc>0?'disc-positive':d.disc<0?'disc-negative':'disc-zero'}`}>
+                            {d.disc>0?'+':''}{fmtNum(d.disc)}
+                          </td>
+                          <td className={`text-right font-600 ${d.disc>0?'disc-positive':d.disc<0?'disc-negative':'disc-zero'}`} style={{fontSize:11}}>
+                            {d.disc>0?'+':''}{fmtVND(d.disc*d.price)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {discData.length>discVisible&&(
+                    <button onClick={()=>setDiscVisible(v=>v+PAGE_SIZE)} className="w-full py-3 text-sm text-brand-400 font-500 hover:bg-brand-900 transition-colors flex items-center justify-center gap-2">
+                      <Icon name="chevron-down" size={14}/>
+                      Xem Thêm
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Bottom action bar */}
+      <div className="fixed bottom-0 left-0 right-0 p-4" style={{background:'rgba(15,23,42,.95)',backdropFilter:'blur(12px)',borderTop:'1px solid #1e293b'}}>
+        <div className="max-w-4xl mx-auto flex gap-2">
+          {isLocked?(
+            <button onClick={exportCSV} className="btn-primary flex-1 py-3 flex items-center justify-center gap-2">
+              <Icon name="download" size={16}/>Tải CSV
+            </button>
+          ):(
+            <>
+              <button onClick={()=>setShowLockConfirm(true)} className="btn-danger flex-1 py-3 flex items-center justify-center gap-2">
+                <Icon name="lock" size={16}/>Hoàn Thành & Khóa Phiếu
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Entry Modal */}
+      {activeProduct&&(
+        <EntryModal
+          product={activeProduct.product}
+          existingQty={activeProduct.existingQty}
+          onSave={saveCount}
+          onClose={()=>setActiveProduct(null)}
+        />
+      )}
+
+      {/* Lock Confirm */}
+      {showLockConfirm&&(
+        <div className="modal-overlay">
+          <div className="modal-content p-6 slide-up text-center" style={{maxWidth:360}}>
+            <div className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center" style={{background:'rgba(239,68,68,.15)'}}>
+              <Icon name="lock" size={24} className="text-red-400"/>
+            </div>
+            <h3 className="font-700 text-lg mb-2">Khóa Phiếu Kiểm?</h3>
+            <p className="text-surface-400 text-sm mb-6">Sau khi khóa, mọi thay đổi sẽ bị từ chối. Bạn có thể xuất CSV nhưng không thể sửa thêm.</p>
+            <div className="flex gap-3">
+              <button onClick={()=>setShowLockConfirm(false)} className="btn-secondary flex-1 py-3">Hủy</button>
+              <button onClick={handleLock} className="btn-danger flex-1 py-3">Xác nhận khóa</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Dashboard / Home ──────────────────────────────────────────────────────────
+function Dashboard({user,onLogout,onOpenAudit}){
+  const [logs,setLogs]=useState(()=>{
+    const all=lsGet('auditLogs')||[];
+    return all.filter(l=>user.isAdmin||l.store===user.store);
+  });
+  const [showNew,setShowNew]=useState(false);
+
+  function handleCreated(audit){
+    setShowNew(false);
+    onOpenAudit(audit);
+  }
+
+  function handleOpen(audit){
+    // Reload latest from LS
+    const all=lsGet('auditLogs')||[];
+    const fresh=all.find(l=>l.id===audit.id)||audit;
+    onOpenAudit(fresh);
+  }
+
+  function refreshLogs(){
+    const all=lsGet('auditLogs')||[];
+    setLogs(all.filter(l=>user.isAdmin||l.store===user.store));
+  }
+
+  const totalToday=logs.filter(l=>{
+    const d=new Date(l.startTime);
+    const now=new Date();
+    return d.toDateString()===now.toDateString();
+  });
+  const totalCounted=totalToday.reduce((s,l)=>s+Object.keys(l.counts||{}).length,0);
+
+  return(
+    <div className="min-h-screen">
+      {/* Header */}
+      <div className="top-bar px-4 py-4">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'linear-gradient(135deg,#16a34a,#15803d)'}}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+                <rect x="9" y="3" width="6" height="4" rx="1"/>
+                <path d="M9 12l2 2 4-4"/>
+              </svg>
+            </div>
+            <div>
+              <h1 className="font-700 text-sm">Kiểm Kho Hàng Ngày</h1>
+              <p className="text-xs text-surface-500">{user.store==='*'?'Toàn hệ thống':user.store} · {user.name}</p>
+            </div>
+          </div>
+          <button onClick={onLogout} className="btn-secondary px-3 py-2 text-sm flex items-center gap-1">
+            <Icon name="log-out" size={13}/>
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 pt-6 pb-24">
+        {/* KPI Cards */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="kpi-card">
+            <div className="flex items-center gap-2 mb-2">
+              <Icon name="package-check" size={16} className="text-brand-400"/>
+              <span className="text-xs text-surface-400">SKU kiểm hôm nay</span>
+            </div>
+            <p className="text-2xl font-800 text-white">{fmtNum(totalCounted)}</p>
+          </div>
+          <div className="kpi-card">
+            <div className="flex items-center gap-2 mb-2">
+              <Icon name="clipboard-list" size={16} className="text-blue-400"/>
+              <span className="text-xs text-surface-400">Phiếu hôm nay</span>
+            </div>
+            <p className="text-2xl font-800 text-white">{totalToday.length}</p>
+          </div>
+        </div>
+
+        {/* Audit Logs */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-700 text-base">Lịch Sử Phiếu Kiểm</h2>
+          <button onClick={refreshLogs} className="btn-secondary px-3 py-2 text-xs flex items-center gap-1">
+            <Icon name="refresh-cw" size={12}/>Làm mới
+          </button>
+        </div>
+
+        {logs.length===0?(
+          <div className="card p-10 text-center">
+            <Icon name="inbox" size={40} className="text-surface-700 mx-auto mb-3"/>
+            <p className="text-surface-500 font-500 mb-1">Chưa có phiếu kiểm nào</p>
+            <p className="text-surface-600 text-sm">Nhấn nút + bên dưới để tạo phiếu mới</p>
+          </div>
+        ):(
+          logs.map(l=>(
+            <div key={l.id}
+              className={`audit-log-item mb-2 cursor-pointer ${l.status==='Done'?'audit-log-done':'audit-log-progress'}`}
+              onClick={()=>handleOpen(l)}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-700 text-sm text-white">{l.cardName}</span>
+                    {l.status==='Done'?<span className="chip chip-success"><Icon name="check" size={9}/>Hoàn thành</span>:<span className="chip chip-warning"><Icon name="activity" size={9}/>Đang kiểm</span>}
+                  </div>
+                  <p className="text-xs text-surface-500 mt-1">{l.checker} · {l.group} · {l.store}</p>
+                  <p className="text-xs text-surface-600 mt-0.5">{new Date(l.startTime).toLocaleString('vi-VN')}</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <span className="chip chip-info">{fmtNum(Object.keys(l.counts||{}).length)} SKU</span>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <button className="fab" onClick={()=>setShowNew(true)}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+
+      {showNew&&<NewAuditModal user={user} onClose={()=>setShowNew(false)} onCreated={handleCreated}/>}
+    </div>
+  );
+}
+
+// ─── App Root ──────────────────────────────────────────────────────────────────
+function App(){
+  const [user,setUser]=useState(()=>lsGet('currentUser'));
+  const [currentAudit,setCurrentAudit]=useState(null);
+
+  function handleLogin(u){setUser(u)}
+  function handleLogout(){lsSet('currentUser',null);setUser(null);setCurrentAudit(null)}
+  function handleOpenAudit(a){setCurrentAudit(a)}
+  function handleBack(){setCurrentAudit(null)}
+  function handleUpdate(a){setCurrentAudit(a)}
+
+  if(!user)return<LoginScreen onLogin={handleLogin}/>;
+  if(currentAudit)return<AuditView audit={currentAudit} onUpdate={handleUpdate} onBack={handleBack} user={user}/>;
+  return<Dashboard user={user} onLogout={handleLogout} onOpenAudit={handleOpenAudit}/>;
+}
+
+const root=ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
+</script>
+</body>
+</html>
